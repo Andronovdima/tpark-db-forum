@@ -1,6 +1,8 @@
 package store
 
-//func CreateTables(db *sql.DB) error {
+import "database/sql"
+
+func CreateTables(db *sql.DB) error {
 //	companiesQuery := `CREATE TABLE IF NOT EXISTS companies (
 //		id bigserial not null primary key,
 //		companyName varchar not null,
@@ -155,5 +157,5 @@ package store
 //		return err
 //	}
 //
-//	return nil
-//}
+	return nil
+}
