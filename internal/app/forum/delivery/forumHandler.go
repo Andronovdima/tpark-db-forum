@@ -2,7 +2,7 @@ package delivery
 
 import (
 	"encoding/json"
-	"github.com/Andronovdima/tpark-db-forum/internal/app/forum"
+	forum "github.com/Andronovdima/tpark-db-forum/internal/app/forum/usecase"
 	"github.com/Andronovdima/tpark-db-forum/internal/app/respond"
 	"github.com/Andronovdima/tpark-db-forum/internal/models"
 	"github.com/gorilla/mux"
@@ -13,12 +13,12 @@ import (
 )
 
 type ForumHandler struct {
-	ForumUsecase forum.Usecase
+	ForumUsecase forum.ForumUsecase
 	logger         *zap.SugaredLogger
 	sessionStore   sessions.Store
 }
 
-func NewForumHandler(m *mux.Router, uc forum.Usecase, logger *zap.SugaredLogger, sessionStore sessions.Store) {
+func NewForumHandler(m *mux.Router, uc forum.ForumUsecase, logger *zap.SugaredLogger, sessionStore sessions.Store) {
 	handler := &ForumHandler{
 		ForumUsecase: 	uc,
 		logger:         logger,

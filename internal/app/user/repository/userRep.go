@@ -53,13 +53,12 @@ func (r *UserRepository) Find(nickname string) (*models.User, error) {
 	return user, nil
 }
 
-func (r *UserRepository) IsExist(nickname string, email string) bool {
+func (r *UserRepository) IsExist(nickname string) bool {
 	row := r.db.QueryRow(
-		"SELECT email, nickname " +
+		"SELECT nickname " +
 			"FROM users " +
-			"WHERE nickname = $1 AND email = $2",
+			"WHERE nickname = $1",
 		nickname,
-		email,
 	)
 	if row == nil {
 		return false
@@ -69,9 +68,35 @@ func (r *UserRepository) IsExist(nickname string, email string) bool {
 }
 
 func (r *UserRepository) Update(user *models.User) error {
+	_, err := r.db.Exec(
+		"UPDATE users " +
+			"SET about = $1 , email = $2, fullname = $3 " +
+			"WHERE nickname = $4",
+			user.About,
+			user.Email,
+			user.Fullname,
+			user.Nickname,
+		)
+	if err != nil {
+		rerr := new(models.HttpError)
+		rerr.StringErr = "Internal Error"
+		rerr.StatusCode = http.StatusInternalServerError
+		return rerr
+	}
 
+	return nil
 }
 
-func (r *UserRepository) CheckEmail (email string) bool {
+func (r *UserRepository) CheckEmail(email string) bool {
+	row := r.db.QueryRow(
+		"SELECT email " +
+			"FROM users " +
+			"WHERE email = $1",
+		email,
+	)
+	if row == nil {
+		return false
+	}
 
+	return true
 }

@@ -1,75 +1,55 @@
 package usecase
 
 import (
-	"github.com/Andronovdima/tpark-db-forum/internal/app/forum"
+	forum "github.com/Andronovdima/tpark-db-forum/internal/app/forum/repository"
+	user "github.com/Andronovdima/tpark-db-forum/internal/app/user/usecase"
 	"github.com/Andronovdima/tpark-db-forum/internal/models"
+	"net/http"
 )
 
 type ForumUsecase struct {
-	forumRep *forum.Repository
-
+	forumRep *forum.ForumRepository
+	userUC  *user.UserUsecase
 }
 
-func NewForumUsecase(fr *forum.Repository) *ForumUsecase {
+func NewForumUsecase(fr *forum.ForumRepository, ur *user.UserUsecase) *ForumUsecase {
 	ForumUsecase := &ForumUsecase{
 		forumRep: fr,
+		userUC:  ur,
 	}
 	return ForumUsecase
 }
 
 func (u *ForumUsecase) CreateForum(forum *models.Forum) (*models.Forum, error) {
+	rerr := new(models.HttpError)
 	isExist := u.forumRep.IsExist(forum.Slug)
 	if isExist {
-		code := 409
-		return u.forumRep.GetForum(forum.Slug), nil
+		rerr.StatusCode = http.StatusConflict
+		rerr.StringErr = "this forum is exist with that slug"
+
+		fr , err := u.forumRep.Find(forum.Slug)
+		if err != nil {
+			rerr.StatusCode = http.StatusInternalServerError
+			rerr.StringErr = err.Error()
+			return nil, err
+		}
+
+		return fr , rerr
 	}
 
-	err := forum.Check()
-	if err != nil {
-		return nil, err
-	}
-
-	isExistUser := u.userRep.IsExist(forum.User)
+	isExistUser := u.userUC.IsExistUser(forum.User)
 	if !isExistUser {
-		code := 404
-		return nil, err
+		rerr.StatusCode = http.StatusNotFound
+		rerr.StringErr = "cant find user with this nickname"
+		return nil, rerr
 	}
 
-	fr ,err := u.forumRep.Create(forum)
-	return fr, nil
+	err := u.forumRep.Create(forum)
+
+	return forum, err
 }
 
 
-func (u *ForumUsecase) CreateThread(th *models.Thread, slug string) (*models.Thread, error) {
-	err := new(models.HttpError)
-
-	isExistForum := u.forumRep.IsExist(slug)
-	if !isExistForum {
-		err.StatusCode = 404
-		err.StringErr = "Cant find forum with slug #" + slug
-		return nil, err
-	}
-
-	isExistUser := u.userRep.IsExist(th.Author)
-	if !isExistUser {
-		err.StatusCode = 404
-		err.StringErr = "Cant find user with author # " + th.Author
-		return nil, err
-	}
-
-	isExistSlug := u.threadRep.IsExist(th)
-	if isExistSlug {
-		err := new(models.HttpError)
-		err.StatusCode = 409
-		err.StringErr = "That slug already exists"
-		return u.threadRep.Give(th), err
-	}
-
-	cerr := u.threadRep.Create(th)
-	if cerr != nil {
-		err.StatusCode = 500
-		err.StringErr = cerr.Error()
-	}
-
-	return th, nil
+func (u *ForumUsecase) IsExist(slug string) bool {
+	return u.forumRep.IsExist(slug)
 }
