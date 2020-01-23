@@ -1,6 +1,5 @@
 !/store/avatars/default.png
 !.gitignore
 *.txt
-go.sum
 *.swp
 .idea
