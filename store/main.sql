@@ -25,13 +25,12 @@ DROP TABLE IF EXISTS threads CASCADE;
 DROP TABLE IF EXISTS posts CASCADE;
 DROP TABLE IF EXISTS votes CASCADE;
 
-
 CREATE TABLE IF NOT EXISTS users (
-      nickname varchar primary key,
-      about varchar,
-      fullname varchar,
-      email varchar not null unique
-    );
+    nickname varchar  COLLATE "POSIX" primary key ,
+    about varchar,
+    fullname varchar,
+    email varchar not null unique
+);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_index
     ON users (LOWER(email));

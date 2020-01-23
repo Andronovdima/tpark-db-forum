@@ -61,6 +61,7 @@ func newDB(dbURL string) (*sql.DB, error) {
 	}
 
 	db.SetMaxOpenConns(100)
+	db.SetMaxIdleConns(100)
 	if err := store.CreateTables(db); err != nil {
 		return nil, err
 	}
