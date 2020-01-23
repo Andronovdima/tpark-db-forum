@@ -1,6 +1,6 @@
 package models
 
 type ThreadUpdate struct {
-	Message string
-	Title string
+	Message string `json:"message" `
+	Title   string `json:"title" `
 }

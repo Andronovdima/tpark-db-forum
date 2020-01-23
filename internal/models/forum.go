@@ -1,12 +1,9 @@
 package models
 
 type Forum struct {
-	Posts int64
-	Slug string
-	Threads int32
-	Title string
-	User string
+	Posts   int64  `json:"posts" `
+	Slug    string `json:"slug" `
+	Threads int32  `json:"threads" `
+	Title   string `json:"title" `
+	User    string `json:"user" `
 }
-
-
-

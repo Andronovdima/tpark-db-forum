@@ -2,7 +2,7 @@ package delivery
 
 import (
 	"encoding/json"
-	"github.com/Andronovdima/tpark-db-forum/internal/app/forum"
+	forum "github.com/Andronovdima/tpark-db-forum/internal/app/forum/usecase"
 	"github.com/Andronovdima/tpark-db-forum/internal/app/respond"
 	"github.com/Andronovdima/tpark-db-forum/internal/models"
 	"github.com/gorilla/mux"
@@ -13,19 +13,25 @@ import (
 )
 
 type ForumHandler struct {
-	ForumUsecase forum.Usecase
+	ForumUsecase forum.ForumUsecase
 	logger         *zap.SugaredLogger
 	sessionStore   sessions.Store
 }
 
-func NewForumHandler(m *mux.Router, uc forum.Usecase, logger *zap.SugaredLogger, sessionStore sessions.Store) {
+func NewForumHandler(m *mux.Router, uc forum.ForumUsecase, logger *zap.SugaredLogger) {
 	handler := &ForumHandler{
 		ForumUsecase: 	uc,
 		logger:         logger,
-		sessionStore:   sessionStore,
 	}
 	//
+	m.HandleFunc("/", handler.HandleHello)
 	m.HandleFunc("/forum/create", handler.HandleCreateForum).Methods(http.MethodPost)
+	m.HandleFunc("/forum/{slug}/details", handler.HandleGetForum).Methods(http.MethodGet)
+}
+
+func (f *ForumHandler) HandleHello (w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	respond.Respond(w, r, http.StatusOK, "hello from server")
 }
 
 func (f *ForumHandler) HandleCreateForum (w http.ResponseWriter, r *http.Request) {
@@ -35,6 +41,7 @@ func (f *ForumHandler) HandleCreateForum (w http.ResponseWriter, r *http.Request
 		if err := r.Body.Close(); err != nil {
 			err = errors.Wrapf(err, "HandleCreateUser<-Body.Close")
 			respond.Error(w, r, http.StatusInternalServerError, err)
+			return
 		}
 	}()
 
@@ -49,11 +56,41 @@ func (f *ForumHandler) HandleCreateForum (w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	createdForum , err := f.ForumUsecase.Create(thisForum)
+	fr , err := f.ForumUsecase.CreateForum(thisForum)
 	if err != nil {
-		err = errors.Wrapf(err, "HandleCreateForum<-Decode: ")
-		respond.Error(w, r, http.StatusBadRequest, err)
+		rerr := err.(*models.HttpError)
+		if rerr.StatusCode == http.StatusConflict {
+			respond.Respond(w, r, http.StatusConflict, fr)
+			return
+		}
+		err = errors.Wrapf(err, "HandleCreateForum<-CreateForum: ")
+		respond.Error(w, r, rerr.StatusCode , rerr)
+		return
 	}
 
-	respond.Respond(w, r, http.StatusCreated, createdForum)
+	respond.Respond(w, r, http.StatusCreated, fr)
+	return
+}
+
+func (f *ForumHandler) HandleGetForum (w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			err = errors.Wrapf(err, "HandleCreateUser<-Body.Close")
+			respond.Error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+	}()
+	vars := mux.Vars(r)
+	slug := vars["slug"]
+	fr , err := f.ForumUsecase.Find(slug)
+	if err != nil {
+		rerr := err.(*models.HttpError)
+		respond.Error(w, r, rerr.StatusCode, rerr)
+		return
+	}
+
+	respond.Respond(w, r, http.StatusOK, fr)
+	return
 }
