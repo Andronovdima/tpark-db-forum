@@ -1,5 +1,5 @@
 .PHONY: build
 build:
-	go build -v ./cmd/apiserver
+	env GOOS=linux GOARCH=amd64 go build -v ./cmd/apiserver
 
 .DEFAULT_GOAL := build

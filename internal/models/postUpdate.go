@@ -1,5 +1,5 @@
 package models
 
 type PostUpdate struct {
-	message string
+	Message string
 }

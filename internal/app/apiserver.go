@@ -2,7 +2,8 @@ package apiserver
 
 import (
 	"database/sql"
-	"github.com/Andronovdima/tpark-db-forum/internal/store"
+	"github.com/Andronovdima/tpark-db-forum/store"
+	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
@@ -14,7 +15,7 @@ func Start() error {
 
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
-		port = ":8080"
+		port = ":5000"
 	} else {
 		port = ":" + port
 	}
@@ -59,7 +60,7 @@ func newDB(dbURL string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(20)
+	db.SetMaxOpenConns(100)
 	if err := store.CreateTables(db); err != nil {
 		return nil, err
 	}

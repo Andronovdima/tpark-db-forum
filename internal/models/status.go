@@ -1,8 +1,8 @@
 package models
 
 type Status struct {
-	Forum int64
-	Post int64
-	Thread int32 //amount branhes
-	user int32 // users amount
+	Forum int64	`json:"forum" `
+	Post int64	`json:"post" `
+	Thread int32 `json:"thread" `
+	User int32 	`json:"user" `
 }
