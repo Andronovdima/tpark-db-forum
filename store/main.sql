@@ -2,10 +2,28 @@
 SET SYNCHRONOUS_COMMIT = 'off';
 
 
-DROP TRIGGER IF EXISTS on_post_insert ON posts;
-DROP TRIGGER IF EXISTS on_thread_insert ON threads;
+DROP INDEX IF EXISTS idx_users_email_index;
+DROP INDEX IF EXISTS idx_users_nickname_index;
+DROP INDEX IF EXISTS idx_forums_slug_index;
+DROP INDEX IF EXISTS idx_threads_slug;
+DROP INDEX IF EXISTS idx_threads_forum;
+DROP INDEX IF EXISTS idx_posts_forum;
+DROP INDEX IF EXISTS idx_posts_parent;
+DROP INDEX IF EXISTS idx_posts_path;
+DROP INDEX IF EXISTS idx_posts_thread;
+DROP INDEX IF EXISTS idx_posts_thread_id;
+
+DROP TRIGGER IF EXISTS on_vote_insert ON votes;
+DROP TRIGGER IF EXISTS on_vote_update ON votes;
 
 DROP FUNCTION IF EXISTS fn_update_thread_votes_ins();
+
+DROP TABLE IF EXISTS forum_users CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS forums CASCADE ;
+DROP TABLE IF EXISTS threads CASCADE;
+DROP TABLE IF EXISTS posts CASCADE;
+DROP TABLE IF EXISTS votes CASCADE;
 
 
 CREATE TABLE IF NOT EXISTS users (
@@ -15,14 +33,23 @@ CREATE TABLE IF NOT EXISTS users (
       email varchar not null unique
     );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_index
+    ON users (LOWER(email));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_index
+    ON users (LOWER(nickname));
+
 
 CREATE TABLE IF NOT EXISTS forums (
-     slug varchar not null primary key,
-     posts bigint not null,
-     threads bigint not null,
+    slug varchar not null primary key,
+    posts bigint not null,
+    threads bigint not null,
     title varchar not null,
     author varchar not null references users
     );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_slug_index
+    ON forums (LOWER(slug));
+
 
 
 CREATE TABLE IF NOT EXISTS threads (
@@ -36,6 +63,11 @@ CREATE TABLE IF NOT EXISTS threads (
     votes int
 );
 
+CREATE INDEX IF NOT EXISTS idx_threads_slug
+    ON threads (LOWER(slug));
+CREATE INDEX IF NOT EXISTS idx_threads_forum
+    ON threads (LOWER(forum));
+
 CREATE TABLE IF NOT EXISTS posts (
     id bigserial not null primary key,
     author varchar not null references users,
@@ -48,19 +80,40 @@ CREATE TABLE IF NOT EXISTS posts (
     path bigint[]  NOT NULL DEFAULT '{0}'
 );
 
+CREATE INDEX IF NOT EXISTS idx_posts_path ON posts USING GIN (path);
+CREATE INDEX IF NOT EXISTS idx_posts_thread ON posts (thread);
+CREATE INDEX IF NOT EXISTS idx_posts_forum ON posts (forum);
+CREATE INDEX IF NOT EXISTS idx_posts_parent ON posts (parent);
+CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON posts (thread, id);
+
+
 
 CREATE TABLE IF NOT EXISTS votes (
     id bigserial not null primary key,
     nickname varchar references users,
     thread bigint references threads,
-    voice int
+    voice smallint
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_nickname_thread_unique
+    ON votes (LOWER(nickname), thread);
+
 
 CREATE TABLE IF NOT EXISTS forum_users
 (
     forum    varchar not null references forums,
     nickname varchar not null references users
 );
+
+CREATE INDEX idx_forum_users_user_id
+    ON forum_users(forum);
+
+CREATE INDEX idx_forum_users_forum_id
+    ON forum_users(nickname);
+
+CREATE INDEX idx_forum_users_user_id_forum_id
+    ON forum_users (forum, nickname);
+
 
 CREATE OR REPLACE FUNCTION forum_users_update()
     RETURNS TRIGGER AS '

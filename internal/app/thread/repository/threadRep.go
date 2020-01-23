@@ -133,7 +133,7 @@ func (tr *ThreadRepository) IsExist(th *models.Thread) (bool, int32) {
 	row := tr.db.QueryRow(
 		"SELECT id " +
 			"FROM threads " +
-			"WHERE (slug <> '' AND LOWER(slug) = $1) OR (LOWER(author) = $2 AND title = $3 AND message = $4 AND LOWER(forum) = $5)",
+			"WHERE (LOWER(slug) <> '' AND LOWER(slug) = $1) OR (LOWER(author) = $2 AND title = $3 AND message = $4 AND LOWER(forum) = $5)",
 		strings.ToLower(th.Slug),
 		strings.ToLower(th.Author),
 		th.Title,
